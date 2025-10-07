@@ -1,28 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import Link from 'next/link'
 
 export default async function NotesPage() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    redirect('/auth/login')
-  }
-
   const { data: notes } = await supabase
     .from('notes')
     .select()
-    .order('created_at', { ascending: false })
 
   async function createNote(formData: FormData) {
     'use server'
 
     const supabase = await createClient()
     const title = formData.get('title') as string
-    const content = formData.get('content') as string
 
-    await supabase.from('notes').insert({ title, content })
+    await supabase.from('notes').insert({ title })
+
     revalidatePath('/notes')
   }
 
@@ -43,6 +37,20 @@ export default async function NotesPage() {
         <p className="text-sm text-muted-foreground">
           Server Component example - Data fetching and mutations using Server Actions
         </p>
+        <div className="flex gap-4 mt-4">
+          <Link
+            href="/notes/server-example"
+            className="text-sm px-4 py-2 border rounded-md hover:bg-accent"
+          >
+            Server Component Example →
+          </Link>
+          <Link
+            href="/notes/client-example"
+            className="text-sm px-4 py-2 border rounded-md hover:bg-accent"
+          >
+            Client Component Example →
+          </Link>
+        </div>
       </div>
 
       <div className="border rounded-lg p-6 bg-card">
@@ -61,19 +69,6 @@ export default async function NotesPage() {
               placeholder="Enter note title"
             />
           </div>
-          <div>
-            <label htmlFor="content" className="block text-sm font-medium mb-2">
-              Content
-            </label>
-            <textarea
-              id="content"
-              name="content"
-              required
-              rows={4}
-              className="w-full px-3 py-2 border rounded-md bg-background"
-              placeholder="Enter note content"
-            />
-          </div>
           <button
             type="submit"
             className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
@@ -89,7 +84,7 @@ export default async function NotesPage() {
           <div className="grid gap-4">
             {notes.map((note) => (
               <div key={note.id} className="border rounded-lg p-6 bg-card">
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start">
                   <h3 className="font-semibold text-lg">{note.title}</h3>
                   <form action={deleteNote}>
                     <input type="hidden" name="id" value={note.id} />
@@ -101,10 +96,6 @@ export default async function NotesPage() {
                     </button>
                   </form>
                 </div>
-                <p className="text-muted-foreground whitespace-pre-wrap">{note.content}</p>
-                <p className="text-xs text-muted-foreground mt-4">
-                  {new Date(note.created_at).toLocaleString()}
-                </p>
               </div>
             ))}
           </div>
